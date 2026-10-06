@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Калькулятор податків ФОП 1, 2, 3 група 2026</title>
+  <meta name="description" content="Розрахуй єдиний податок, військовий збір і ЄСВ для ФОП 1, 2 і 3 групи у 2026 році. Порівняй групи, дізнайся терміни сплати.">
+  <style>
+    :root { --bg:#f6f7f9; --card:#fff; --text:#1c1e21; --muted:#6b7280; --accent:#2563eb; --border:#e5e7eb; --good:#16a34a; --bad:#dc2626; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg:#111418; --card:#1b1f25; --text:#eceff3; --muted:#9aa3af; --accent:#60a5fa; --border:#2b313a; --good:#4ade80; --bad:#f87171; }
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:var(--bg); color:var(--text); }
+    main { max-width: 520px; margin: 0 auto; padding: 24px 16px 48px; }
+    h1 { font-size: 1.4rem; margin: 0 0 4px; }
+    h2 { font-size: 1.05rem; margin: 0 0 12px; }
+    .sub { color: var(--muted); margin: 0 0 20px; font-size: .95rem; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin-bottom: 16px; }
+    label { display:block; font-size:.9rem; margin: 0 0 6px; }
+    input[type=number] { width:100%; padding:12px; font-size:1.1rem; border:1px solid var(--border); border-radius:10px; background:var(--bg); color:var(--text); }
+    .row { margin-bottom: 16px; }
+    .hint { color: var(--muted); font-size: .8rem; margin-top: 6px; }
+    .radio { display:flex; gap:8px; }
+    .radio label { position:relative; flex:1; margin:0; padding:10px; text-align:center; border:1px solid var(--border); border-radius:10px; cursor:pointer; }
+    .radio input { position:absolute; opacity:0; pointer-events:none; }
+    .radio label:has(input:focus-visible), button:focus-visible, input[type=number]:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+    .radio input:checked + span { color: var(--accent); font-weight: 600; }
+    .radio label:has(input:checked) { border-color: var(--accent); }
+    button { width:100%; padding:14px; font-size:1rem; border:0; border-radius:10px; background:var(--accent); color:#fff; cursor:pointer; }
+    button.ghost { background:transparent; color:var(--accent); border:1px solid var(--border); margin-top:12px; padding:10px; font-size:.9rem; }
+    .result { margin-top: 20px; display:none; }
+    .line { display:flex; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); }
+    .line:last-child { border-bottom:0; }
+    .total { font-weight:700; font-size:1.1rem; }
+    .warn { color:var(--bad); margin-top:12px; font-size:.9rem; }
+    .note { color: var(--muted); font-size:.8rem; margin-top: 20px; line-height: 1.5; }
+    .hidden { display:none; }
+    .neg { color:var(--bad); }
+    .caution { background:rgba(220,38,38,.08); border:1px solid var(--border); border-radius:10px; padding:10px; font-size:.82rem; line-height:1.45; margin-top:10px; }
+    .bar { height:10px; background:var(--border); border-radius:99px; overflow:hidden; margin-top:6px; }
+    .bar > div { height:100%; background:var(--accent); }
+    .bar.over > div { background:var(--bad); }
+    table { width:100%; border-collapse:collapse; font-size:.9rem; margin-top:8px; }
+    th, td { text-align:right; padding:8px 4px; border-bottom:1px solid var(--border); }
+    th:first-child, td:first-child { text-align:left; }
+    th { color:var(--muted); font-weight:500; font-size:.8rem; }
+    tr.best td { color:var(--good); font-weight:700; }
+    tr.na td { color:var(--muted); text-decoration:line-through; }
+    .dl { display:flex; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); font-size:.92rem; }
+    .dl:last-child { border-bottom:0; }
+    .dl small { display:block; color:var(--muted); }
+    .dl .when { text-align:right; white-space:nowrap; font-weight:600; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Калькулятор ФОП 1, 2, 3 група</h1>
+  <p class="sub">Єдиний податок, військовий збір і ЄСВ за 2026 рік</p>
+
+  <!-- РОЗРАХУНОК -->
+  <div class="card">
+    <div class="row">
+      <label>Група єдиного податку</label>
+      <div class="radio">
+        <label><input type="radio" name="group" value="1"><span>1 група</span></label>
+        <label><input type="radio" name="group" value="2"><span>2 група</span></label>
+        <label><input type="radio" name="group" value="3" checked><span>3 група</span></label>
+      </div>
+    </div>
+
+    <div class="row">
+      <label for="income">Дохід за період, грн</label>
+      <input id="income" type="number" min="0" inputmode="decimal" placeholder="Наприклад, 100000">
+    </div>
+
+    <div class="row">
+      <label>Період</label>
+      <div class="radio">
+        <label><input type="radio" name="period" value="1" checked><span>Місяць</span></label>
+        <label><input type="radio" name="period" value="3"><span>Квартал</span></label>
+        <label><input type="radio" name="period" value="12"><span>Рік</span></label>
+      </div>
+    </div>
+
+    <div class="row" id="vatRow">
+      <label>Ти платник ПДВ?</label>
+      <div class="radio">
+        <label><input type="radio" name="vat" value="no" checked><span>Ні (5%)</span></label>
+        <label><input type="radio" name="vat" value="yes"><span>Так (3% + ПДВ)</span></label>
+      </div>
+    </div>
+
+    <div class="hidden" id="vatDetails">
+      <div class="row">
+        <label>Дохід, який ти вводиш вище</label>
+        <div class="radio">
+          <label><input type="radio" name="vatIncl" value="no" checked><span>Без ПДВ</span></label>
+          <label><input type="radio" name="vatIncl" value="yes"><span>З ПДВ</span></label>
+        </div>
+        <div class="hint">Єдиний податок і військовий збір рахуються від доходу без ПДВ.</div>
+      </div>
+      <div class="row">
+        <label for="vatCredit">ПДВ із твоїх закупівель за цей період, грн (необов'язково)</label>
+        <input id="vatCredit" type="number" min="0" inputmode="decimal" placeholder="0">
+        <div class="hint">Податковий кредит зменшує ПДВ до сплати.</div>
+      </div>
+    </div>
+
+    <div class="row hidden" id="fixedRow">
+      <label for="fixedTax">Твоя ставка єдиного податку, грн/міс</label>
+      <input id="fixedTax" type="number" min="0" inputmode="decimal">
+      <div class="hint" id="fixedHint"></div>
+    </div>
+
+    <div class="row">
+      <label for="esv">ЄСВ за себе, грн/міс</label>
+      <input id="esv" type="number" min="0" inputmode="decimal">
+      <div class="hint" id="esvHint"></div>
+    </div>
+
+    <button id="calc">Порахувати</button>
+
+    <div id="result" class="result"></div>
+  </div>
+
+  <!-- ПОРІВНЯННЯ -->
+  <div class="card hidden" id="compareCard">
+    <h2>Скільки податків на різних групах</h2>
+    <div id="compare"></div>
+  </div>
+
+  <!-- ЗВОРОТНИЙ РОЗРАХУНОК -->
+  <div class="card">
+    <h2>Скільки виставити клієнту</h2>
+    <div class="row">
+      <label for="net">Скільки хочу отримувати «на руки», грн/міс</label>
+      <input id="net" type="number" min="0" inputmode="decimal" placeholder="Наприклад, 40000">
+      <div class="hint">Рахується для групи та налаштувань, вибраних вище.</div>
+    </div>
+    <button id="reverse">Порахувати дохід</button>
+    <div id="reverseResult" class="result"></div>
+  </div>
+
+  <!-- ТЕРМІНИ -->
+  <div class="card">
+    <h2>Найближчі терміни сплати та звітності</h2>
+    <div id="deadlines"></div>
+    <div class="hint">Для вибраної групи. Якщо дата випадає на вихідний, її переносять на наступний робочий день (державні свята тут не враховано).</div>
+  </div>
+
+  <p class="note">
+    Ставки 2026. 3 група: єдиний податок 5% (без ПДВ) або 3% (з ПДВ), військовий збір 1% від доходу.
+    1 і 2 група: фіксований єдиний податок (ставку затверджує місцева рада, вказано максимум)
+    і військовий збір 864,70 грн/міс. ЄСВ для всіх мінімум 1 902,34 грн/міс (можна вказати більше). Для платників ПДВ ставка ПДВ 20%.
+    Це орієнтовний розрахунок, а не податкова консультація. Перед сплатою перевір актуальні ставки та терміни на сайті ДПС.
+  </p>
+</main>
+
+<script>
+  // Усі ставки в одному місці: їх легко оновити наступного року
+  const RATES = {
+    taxNoVat: 0.05,
+    taxVat: 0.03,
+    military3: 0.01,          // 3 група: % від доходу
+    militaryFixed: 864.70,    // 1 і 2 група: грн/міс (10% МЗП)
+    esvMonth: 1902.34,        // мінімум
+    esvMax: 38046.80,         // максимум, який можна сплатити добровільно
+    vat: 0.20,
+    fixedMax: { 1: 332.80, 2: 1729.40 },   // максимум єдиного податку, грн/міс
+    yearLimit: { 1: 1444049, 2: 7211598, 3: 10091049 }
+  };
+
+  const $ = id => document.getElementById(id);
+  const val = name => document.querySelector(`input[name="${name}"]:checked`).value;
+  const fmt = n => n.toLocaleString("uk-UA", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " грн";
+  const fmt0 = n => Math.round(n).toLocaleString("uk-UA") + " грн";
+
+  // ---- збереження налаштувань (працює на твоєму хостингу, у try/catch на всяк випадок)
+  const STORE = "fop-calc-v1";
+  function save() {
+    try {
+      localStorage.setItem(STORE, JSON.stringify({
+        group: val("group"), period: val("period"), vat: val("vat"), vatIncl: val("vatIncl"),
+        income: $("income").value, fixed: $("fixedTax").value, net: $("net").value,
+        esv: $("esv").value, vatCredit: $("vatCredit").value
+      }));
+    } catch (e) {}
+  }
+  function load() {
+    try {
+      const s = JSON.parse(localStorage.getItem(STORE) || "null");
+      if (!s) return;
+      const set = (name, v) => { const el = document.querySelector(`input[name="${name}"][value="${v}"]`); if (el) el.checked = true; };
+      set("group", s.group); set("period", s.period); set("vat", s.vat); set("vatIncl", s.vatIncl);
+      if (s.esv) $("esv").value = s.esv;
+      $("vatCredit").value = s.vatCredit || "";
+      $("income").value = s.income || ""; $("net").value = s.net || "";
+      updateForm();
+      if (s.fixed && val("group") !== "3") $("fixedTax").value = s.fixed;
+    } catch (e) {}
+  }
+
+  // ---- форма
+  function updateForm() {
+    const g = val("group");
+    $("vatRow").classList.toggle("hidden", g !== "3");
+    $("vatDetails").classList.toggle("hidden", !(g === "3" && val("vat") === "yes"));
+    $("fixedRow").classList.toggle("hidden", g === "3");
+    if (g !== "3") {
+      $("fixedTax").value = RATES.fixedMax[g];
+      $("fixedHint").textContent = `Максимум для ${g} групи: ${fmt(RATES.fixedMax[g])}. Точну ставку визнач за рішенням своєї місцевої ради.`;
+    }
+    renderDeadlines();
+  }
+  document.querySelectorAll('input[name="group"], input[name="vat"]').forEach(r => r.addEventListener("change", updateForm));
+  $("esv").value = RATES.esvMonth;
+  $("esvHint").textContent = `Мінімум ${fmt(RATES.esvMonth)}, максимум ${fmt(RATES.esvMax)}. Якщо платиш більше добровільно, впиши свою суму.`;
+
+  // ---- ядро розрахунку
+  function compute(g, income, months, opts) {
+    // base: дохід без ПДВ (від нього рахуються єдиний податок і військовий збір)
+    let base = income, vatOut = 0, vatPay = 0;
+    const vatPayer = g === 3 && opts.vat;
+    if (vatPayer) {
+      if (opts.vatIncl) { base = income / (1 + RATES.vat); vatOut = income - base; }
+      else { vatOut = income * RATES.vat; }
+      vatPay = Math.max(0, vatOut - opts.vatCredit);
+    }
+    let tax, military, taxLabel;
+    if (g === 3) {
+      const rate = opts.vat ? RATES.taxVat : RATES.taxNoVat;
+      tax = base * rate;
+      military = base * RATES.military3;
+      taxLabel = `Єдиний податок (${opts.vat ? "3%" : "5%"})`;
+    } else {
+      tax = opts.fixed[g] * months;
+      military = RATES.militaryFixed * months;
+      taxLabel = "Єдиний податок (фіксований)";
+    }
+    const esv = opts.esvMonth * months;
+    const total = tax + military + esv;
+    const yearIncome = base * (12 / months);
+    return {
+      tax, military, esv, total, taxLabel, base, vatPayer, vatOut, vatPay,
+      left: base - total,
+      share: base > 0 ? (total / base) * 100 : 0,
+      yearIncome,
+      over: yearIncome > RATES.yearLimit[g]
+    };
+  }
+
+  function currentOpts() {
+    const g = val("group");
+    const fixed = { 1: RATES.fixedMax[1], 2: RATES.fixedMax[2] };
+    if (g !== "3") {
+      const f = parseFloat($("fixedTax").value);
+      if (!isNaN(f) && f >= 0) fixed[g] = f;
+    }
+    // ЄСВ: обмежуємо між мінімумом і максимумом
+    let esvMonth = parseFloat($("esv").value);
+    let esvNote = "";
+    if (isNaN(esvMonth) || esvMonth < RATES.esvMonth) {
+      if (!isNaN(esvMonth)) esvNote = "Менше мінімуму сплатити не можна, взято мінімум.";
+      esvMonth = RATES.esvMonth;
+    } else if (esvMonth > RATES.esvMax) {
+      esvNote = "Більше максимуму сплатити не можна, взято максимум.";
+      esvMonth = RATES.esvMax;
+    }
+    $("esvHint").textContent = esvNote ||
+      `Мінімум ${fmt(RATES.esvMonth)}, максимум ${fmt(RATES.esvMax)}. Якщо платиш більше добровільно, впиши свою суму.`;
+    const vatCredit = Math.max(0, parseFloat($("vatCredit").value) || 0);
+    return { vat: val("vat") === "yes", vatIncl: val("vatIncl") === "yes", vatCredit, fixed, esvMonth };
+  }
+
+  let lastText = "";
+
+  function runCalc(manual) {
+    const g = parseInt(val("group"), 10);
+    const months = parseInt(val("period"), 10);
+    const income = parseFloat($("income").value);
+    const box = $("result");
+
+    if (isNaN(income) || income < 0) {
+      // при автооновленні просто ховаємо старий результат, помилку показуємо лише після натискання кнопки
+      $("compareCard").classList.add("hidden");
+      if (manual) { box.style.display = "block"; box.innerHTML = '<div class="warn">Введи суму доходу (число більше за 0).</div>'; }
+      else box.style.display = "none";
+      return;
+    }
+    box.style.display = "block";
+
+    const opts = currentOpts();
+    const r = compute(g, income, months, opts);
+    const limit = RATES.yearLimit[g];
+    const pct = Math.min(100, (r.yearIncome / limit) * 100);
+    const periodName = { 1: "місяць", 3: "квартал", 12: "рік" }[months];
+
+    box.innerHTML = `
+      <div class="line"><span>${r.taxLabel}</span><span>${fmt(r.tax)}</span></div>
+      <div class="line"><span>Військовий збір</span><span>${fmt(r.military)}</span></div>
+      <div class="line"><span>ЄСВ</span><span>${fmt(r.esv)}</span></div>
+      <div class="line total"><span>Разом податків</span><span>${fmt(r.total)}</span></div>
+      <div class="line"><span>Залишається</span><span class="${r.left < 0 ? "neg" : ""}">${fmt(r.left)}</span></div>
+      <div class="line"><span>Податкове навантаження</span><span>${r.share.toFixed(1)}%</span></div>
+      ${r.vatPayer ? `
+        <div class="line"><span>Дохід без ПДВ</span><span>${fmt(r.base)}</span></div>
+        <div class="line"><span>ПДВ до сплати в бюджет</span><span>${fmt(r.vatPay)}</span></div>
+        <div class="hint">ПДВ ти отримуєш від клієнтів і передаєш державі, тому він не входить у «Залишається». ${r.vatOut - opts.vatCredit < 0 ? "Податковий кредит більший за ПДВ із продажів, перевір, як його переносити." : ""}</div>` : ""}
+      <div style="margin-top:12px;font-size:.85rem">
+        Річний ліміт ${g} групи: ${pct.toFixed(1)}% (${fmt0(r.yearIncome)} з ${fmt0(limit)})
+        <div class="bar ${r.over ? "over" : ""}"><div style="width:${pct}%"></div></div>
+      </div>
+      ${r.over ? `<div class="warn">Якщо такий дохід буде весь рік, він перевищить ліміт ${g} групи.</div>` : ""}
+      ${income === 0 ? '<div class="hint">Навіть без доходу ЄСВ (і фіксований податок для 1 та 2 групи) сплачувати потрібно.</div>' : ""}
+      <button class="ghost" id="copy">Скопіювати результат</button>
+    `;
+
+    lastText =
+`ФОП ${g} група, 2026. Дохід за ${periodName}: ${fmt(income)}
+${r.taxLabel}: ${fmt(r.tax)}
+Військовий збір: ${fmt(r.military)}
+ЄСВ: ${fmt(r.esv)}
+Разом податків: ${fmt(r.total)}
+Залишається: ${fmt(r.left)}${r.vatPayer ? `\nПДВ до сплати: ${fmt(r.vatPay)}` : ""}`;
+
+    $("copy").addEventListener("click", async e => {
+      try { await navigator.clipboard.writeText(lastText); e.target.textContent = "Скопійовано"; }
+      catch (err) { e.target.textContent = "Не вдалося скопіювати"; }
+    });
+
+    renderCompare(income, months, opts);
+    save();
+    if (manual) box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+  $("calc").addEventListener("click", () => runCalc(true));
+
+  // ---- порівняння груп
+  function renderCompare(income, months, opts) {
+    const rows = [1, 2, 3].map(g => ({ g, r: compute(g, income, months, opts) }));
+    const eligible = rows.filter(x => !x.r.over);
+    const best = eligible.length ? eligible.reduce((a, b) => (a.r.total <= b.r.total ? a : b)).g : null;
+
+    $("compare").innerHTML = `
+      <table>
+        <tr><th>Група</th><th>Податки</th><th>Залишок</th><th>%</th></tr>
+        ${rows.map(({ g, r }) => `
+          <tr class="${r.over ? "na" : g === best ? "best" : ""}">
+            <td>${g} група${r.over ? " (ліміт)" : ""}</td>
+            <td>${fmt0(r.total)}</td><td>${fmt0(r.left)}</td><td>${r.share.toFixed(1)}%</td>
+          </tr>`).join("")}
+      </table>
+      <div class="caution"><b>Не всі групи доступні всім.</b> Зеленим виділено лише найменшу суму податків. 1 група: без найманих працівників, дозволені тільки торгівля на ринках і побутові послуги. 2 група: до 10 працівників, певні послуги, виробництво, ресторани. Багато видів діяльності (наприклад, IT, консалтинг, дизайн) доступні тільки на 3 групі. Перевір свій КВЕД у ДПС або в бухгалтера.</div>`;
+    $("compareCard").classList.remove("hidden");
+  }
+
+  // ---- зворотний розрахунок
+  function runReverse(manual) {
+    const net = parseFloat($("net").value);
+    const g = parseInt(val("group"), 10);
+    const box = $("reverseResult");
+    if (isNaN(net) || net <= 0) {
+      if (manual) { box.style.display = "block"; box.innerHTML = '<div class="warn">Введи суму, яку хочеш отримувати (більше за 0).</div>'; }
+      else box.style.display = "none";
+      return;
+    }
+    box.style.display = "block";
+    const opts = currentOpts();
+    let gross;
+    if (g === 3) {
+      const rate = (opts.vat ? RATES.taxVat : RATES.taxNoVat) + RATES.military3;
+      gross = (net + opts.esvMonth) / (1 - rate);
+    } else {
+      gross = net + opts.fixed[g] + RATES.militaryFixed + opts.esvMonth;
+    }
+    const r = compute(g, gross, 1, opts);
+    box.innerHTML = `
+      <div class="line total"><span>Потрібний дохід${opts.vat && g === 3 ? " (без ПДВ)" : ""}</span><span>${fmt(gross)}/міс</span></div>
+      <div class="line"><span>Податки з нього</span><span>${fmt(r.total)}</span></div>
+      <div class="line"><span>На руки</span><span>${fmt(r.left)}</span></div>
+      <div class="line"><span>За рік</span><span>${fmt0(gross * 12)}</span></div>
+      ${opts.vat && g === 3 ? '<div class="hint">ПДВ клієнт додає зверху до цієї суми.</div>' : ""}
+      ${r.over ? `<div class="warn">За рік це більше за ліміт ${g} групи.</div>` : ""}`;
+    save();
+    if (manual) box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+  $("reverse").addEventListener("click", () => runReverse(true));
+
+  // ---- терміни
+  function nextWorkday(d) {
+    const x = new Date(d);
+    while (x.getDay() === 0 || x.getDay() === 6) x.setDate(x.getDate() + 1);
+    return x;
+  }
+  const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+  const fmtDate = d => d.toLocaleDateString("uk-UA", { day: "numeric", month: "long", year: "numeric" });
+
+  function renderDeadlines() {
+    const g = parseInt(val("group"), 10);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const y = today.getFullYear();
+    const ev = [];
+
+    for (let year = y - 1; year <= y + 1; year++) {
+      // кінці кварталів
+      [[2, 31], [5, 30], [8, 30], [11, 31]].forEach(([m, d], qi) => {
+        const qEnd = new Date(year, m, d);
+        const q = qi + 1;
+        // ЄСВ за себе: до 20 числа після кварталу
+        ev.push({ date: nextWorkday(new Date(year, m + 1, 20)), title: `ЄСВ за себе за ${q} квартал ${year}`, sub: "Сплата" });
+        if (g === 3) {
+          ev.push({ date: nextWorkday(addDays(qEnd, 40)), title: `Декларація за ${q} квартал ${year}`, sub: "Подання" });
+          ev.push({ date: nextWorkday(addDays(qEnd, 50)), title: `Єдиний податок і військовий збір за ${q} квартал ${year}`, sub: "Сплата" });
+        }
+      });
+      if (g !== 3) {
+        for (let m = 0; m < 12; m++) {
+          ev.push({ date: nextWorkday(new Date(year, m, 20)), title: `Єдиний податок і військовий збір за ${new Date(year, m).toLocaleDateString("uk-UA", { month: "long" })}`, sub: "Сплата авансом до 20 числа" });
+        }
+      }
+    }
+
+    const upcoming = ev.filter(e => e.date >= today).sort((a, b) => a.date - b.date).slice(0, 6);
+    $("deadlines").innerHTML = upcoming.map(e => {
+      const days = Math.round((e.date - today) / 86400000);
+      const left = days === 0 ? "сьогодні" : `через ${days} дн.`;
+      return `<div class="dl"><div>${e.title}<small>${e.sub}</small></div><div class="when">${fmtDate(e.date)}<small>${left}</small></div></div>`;
+    }).join("");
+  }
+
+  updateForm();
+  load();
+  // результати оновлюються самі, коли змінюєш будь-яке поле
+  const refresh = () => { runCalc(false); runReverse(false); save(); };
+  ["income", "net", "fixedTax", "esv", "vatCredit"].forEach(id => $(id).addEventListener("input", refresh));
+  document.querySelectorAll('input[type=radio]').forEach(r => r.addEventListener("change", refresh));
+  $("income").addEventListener("keydown", e => { if (e.key === "Enter") runCalc(true); });
+  $("net").addEventListener("keydown", e => { if (e.key === "Enter") runReverse(true); });
+  if (!isNaN(parseFloat($("income").value))) runCalc(false);
+  if (!isNaN(parseFloat($("net").value))) runReverse(false);
+</script>
+</body>
+</html>
